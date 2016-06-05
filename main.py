@@ -1,8 +1,10 @@
 from config import *
 import pytumblr
+import random
 
 ##  Register an application on https://api.tumblr.com/console and uncomment the following variables:
 # CONSUMER_KEY = 
+# CONSUMER_SECRET = 
 # OAUTH_KEY = 
 # OAUTH_SECRET = 
 
@@ -19,6 +21,19 @@ client = pytumblr.TumblrRestClient(
 
 # Make a basic request
 request = client.info()
+# Get all posts from GET_BLOG
+blog_data = client.posts(GET_BLOG)
+
+# Quit if blogs were not specified
+if (GET_BLOG == '' and POST_BLOG == ''):
+	print("You did not specify neither a source blog or destination blog.")
+	raise SystemExit
+elif GET_BLOG =='':
+	print("You did not specify a source blog.")
+	raise SystemExit
+elif POST_BLOG == '':
+	print("You did not specify a destination blog.")
+	raise SystemExit
 
 # Quit if client credentials are invalid
 if not ('user' in request):
@@ -33,12 +48,16 @@ if not (POST_BLOG in valid_post_blogs):
 	print("You do not own the blog you would like to post to.")
 	raise SystemExit
 
-# Get all posts from GET_BLOG
-blog_data = client.posts(GET_BLOG)
+# Quit if GET_BLOG does not exist
+if not ('blog' in blog_data):
+	print("The blog you are attempting to get posts from does not exist.")
+	raise SystemExit
+
+posts = blog_data['posts']
+random.shuffle(posts)
 
 # Post blogs to POST_BLOG
 for post in blog_data['posts']:
 	client.reblog(POST_BLOG, id=post['id'], reblog_key=post['reblog_key'])
-
 
 
