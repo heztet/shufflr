@@ -60,15 +60,25 @@ def validate_blogs(client, GET_BLOG, POST_BLOG):
 
 # Returns posts from GET_BLOG
 def retrieve_posts(client, GET_BLOG, notes=False):
-	if notes:
-		data = client.posts(GET_BLOG, notes_info=True)
-	else:
-		data = client.posts(GET_BLOG)
-	return data['posts']
+	offset_int = 0
+	posts = []
+	data = {'posts': ['not_empty']}
 
-# Randomly shuffles an array of posts
-def sort_random(arr):
-	return random.shuffle(arr)
+	if notes:
+		while len(data['posts']) > 0:
+			data = client.posts(GET_BLOG, notes_info=True, offset=offset_int)
+			for post in data['posts']:
+				posts.append(post)
+			offset_int += 20
+			print('Stepping... (on post %d)' % offset_int)
+	else:
+		while len(data['posts']) > 0:
+			data = client.posts(GET_BLOG, notes_info=False, offset=offset_int)
+			for post in data['posts']:
+				posts.append(post)
+			offset_int += 20
+			print('Stepping... (on post %d)' % offset_int)
+	return posts
 
 # Sorts an array of posts by number of notes (descending)
 def sort_likes(arr):
@@ -85,7 +95,6 @@ client = pytumblr.TumblrRestClient(
 # Check that client and blog inputs are valid
 validate_client(client)
 validate_blogs(client, GET_BLOG, POST_BLOG)
-
 
 # Get sort method from user
 print('')
@@ -111,22 +120,25 @@ while user_input == '':
 		user_input = ''
 
 # Get all posts from GET_BLOG
+print('Fetching posts... (this might take a while)')
 if user_input == 1: # Does not need notes
-	posts = retrieve_posts(client, GET_BLOG)
+	posts = retrieve_posts(client, GET_BLOG, notes=False)
 else:
 	posts = retrieve_posts(client, GET_BLOG, notes=True)
 
+
 # Sort posts
+print('Sorting posts...')
 if user_input == 1:
-	posts = sort_random(posts)
+	random.shuffle(posts)
 elif user_input == 2:
 	posts = sort_likes(posts)
 
-for post in posts:
-	print(len(post['notes']))
-
 # Post blogs to POST_BLOG
-# Reverses post order so that most desired posts are at the top
-for post in posts.reverse():
-	client.reblog(POST_BLOG, id=post['id'], reblog_key=post['reblog_key'])
-	print('Posted (id: %s)' % post['id'])
+print('Posting to blog...')
+if posts == [] or posts is None:
+	print('There was nothing to post!')
+else:
+	for post in posts[::-1]: # Reverses post order so that most desired posts are at the top
+		client.reblog(POST_BLOG, id=post['id'], reblog_key=post['reblog_key'])
+		# print('Posted (id: %s)' % post['id'])
