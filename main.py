@@ -80,9 +80,12 @@ def retrieve_posts(client, GET_BLOG, notes=False):
 			print('Stepping... (on post %d)' % offset_int)
 	return posts
 
+def get_post_total(client, GET_POST):
+	
+
 # Sorts an array of posts by number of notes (descending)
 def sort_likes(arr):
-	return sorted(arr, key = lambda post: len(post['notes']), reverse=True)
+	return sorted(arr, key = lambda post: post['note_count'], reverse=True)
 
 # Authenticate via OAuth
 client = pytumblr.TumblrRestClient(
@@ -101,6 +104,7 @@ print('')
 print('Choose a sorting method:')
 print('(1) Random')
 print('(2) By Notes (descending)')
+print('(3) By Tiers (20%/30%/50%)')
 print('')
 
 user_input = ''
@@ -133,6 +137,9 @@ if user_input == 1:
 	random.shuffle(posts)
 elif user_input == 2:
 	posts = sort_likes(posts)
+elif user_input == 3:
+	total_posts = get_post_total(client, GET_BLOG)
+	posts = sort_tiered(posts, total_posts)
 
 # Post blogs to POST_BLOG
 print('Posting to blog...')
