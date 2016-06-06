@@ -176,3 +176,4 @@ else:
 		client.reblog(POST_BLOG, id=post['id'], reblog_key=post['reblog_key'])
 		remaining -= 1
 		print('Posted. %d remaining' % remaining)
+print('Done')
