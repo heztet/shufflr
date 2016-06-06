@@ -2,6 +2,7 @@ from config import *
 import pytumblr
 import random
 import math
+import sys
 
 # Checks that the client is valid
 # Exits if validation fails
@@ -61,9 +62,12 @@ def validate_blogs(client, GET_BLOG, POST_BLOG):
 
 # Returns posts from GET_BLOG
 def retrieve_posts(client, GET_BLOG, notes=False):
-	offset_int = 3960
+	offset_int = 0
 	posts = []
 	data = {'posts': ['not_empty']}
+
+	# Get total number of posts
+	total_posts = get_post_total(client, GET_BLOG)
 
 	if notes:
 		while len(data['posts']) > 0:
@@ -71,14 +75,17 @@ def retrieve_posts(client, GET_BLOG, notes=False):
 			for post in data['posts']:
 				posts.append(post)
 			offset_int += 20
-			print('Stepping... (on post %d)' % offset_int)
+			#print('Stepping... (on post %d)' % offset_int)
+			progress_bar(offset_int, total_posts)
 	else:
 		while len(data['posts']) > 0:
 			data = client.posts(GET_BLOG, notes_info=False, offset=offset_int)
 			for post in data['posts']:
 				posts.append(post)
 			offset_int += 20
-			print('Stepping... (on post %d)' % offset_int)
+			#print('Stepping... (on post %d)' % offset_int)
+			progress_bar(offset_int, total_posts)
+	end_progress_bar()
 	return posts
 
 def get_post_total(client, GET_BLOG):
@@ -96,8 +103,6 @@ def sort_tiered(arr, total):
 
 	# Sort by likes descending first
 	arr = sort_likes(arr)
-	print(top_end)
-	print(middle_end)
 
 	# Split into tiers
 	top = arr[0:top_end]
@@ -114,6 +119,23 @@ def sort_tiered(arr, total):
 			posts.append(post)
 
 	return posts
+
+def progress_bar(current, end, length=20):
+	# Ensure that progress bar isn't maxed out
+	if current > end:
+		current = end
+
+	# Create pieces of progress bar
+	percent = float(current) / end
+	bar = '#' * int(round(percent * length))
+	spaces = ' ' * (length - len(bar))
+
+	# Write to console
+	sys.stdout.write("\rPercent: [{0}] {1}% ({2}/{3}) ".format(bar + spaces, int(round(percent * 100)), current, end))
+	sys.stdout.flush()
+
+def end_progress_bar():
+	print('')
 
 # Authenticate via OAuth
 client = pytumblr.TumblrRestClient(
@@ -132,8 +154,7 @@ print('')
 print('Choose a sorting method:')
 print('(1) Random')
 print('(2) By Notes (descending)')
-print('(3) By Tiers (20%/30%/50%)')
-print('')
+print('(3) By Tiers')
 
 user_input = ''
 while user_input == '':
@@ -150,9 +171,10 @@ while user_input == '':
 	if (user_input < 1) or (user_input > 3):
 		print('Please select a given option')
 		user_input = ''
+print('')
 
 # Get all posts from GET_BLOG
-print('Fetching posts... (this might take a while)')
+print('Fetching posts...')
 if user_input == 1: # Does not need notes
 	posts = retrieve_posts(client, GET_BLOG, notes=False)
 else:
@@ -160,7 +182,6 @@ else:
 
 
 # Sort posts
-print('Sorting posts...')
 if user_input == 1:
 	random.shuffle(posts)
 elif user_input == 2:
@@ -174,9 +195,11 @@ print('Posting to blog...')
 if posts == [] or posts is None:
 	print('There was nothing to post!')
 else:
-	remaining = len(posts)
+	total = len(posts)
+	count = 0
 	for post in posts[::-1]: # Reverses post order so that most desired posts are at the top
 		client.reblog(POST_BLOG, id=post['id'], reblog_key=post['reblog_key'])
-		remaining -= 1
-		print('Posted. %d remaining' % remaining)
-print('Done')
+		count += 1
+		progress_bar(count, total)
+	end_progress_bar
+print('Done!')
