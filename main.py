@@ -1,6 +1,7 @@
 from config import *
 import pytumblr
 import random
+import math
 
 # Checks that the client is valid
 # Exits if validation fails
@@ -60,7 +61,7 @@ def validate_blogs(client, GET_BLOG, POST_BLOG):
 
 # Returns posts from GET_BLOG
 def retrieve_posts(client, GET_BLOG, notes=False):
-	offset_int = 0
+	offset_int = 3960
 	posts = []
 	data = {'posts': ['not_empty']}
 
@@ -90,11 +91,13 @@ def sort_likes(arr):
 
 def sort_tiered(arr, total):
 	# Get number of posts per tier
-	top_end = floor(0.2 * total)
-	middle_end = floor(0.3 * total)
+	top_end = int(math.floor(0.2 * len(arr)))
+	middle_end = int(math.floor(0.3 * len(arr)))
 
 	# Sort by likes descending first
 	arr = sort_likes(arr)
+	print(top_end)
+	print(middle_end)
 
 	# Split into tiers
 	top = arr[0:top_end]
@@ -153,7 +156,7 @@ print('Fetching posts... (this might take a while)')
 if user_input == 1: # Does not need notes
 	posts = retrieve_posts(client, GET_BLOG, notes=False)
 else:
-	posts = retrieve_posts(client, GET_BLOG, notes=True)
+	posts = retrieve_posts(client, GET_BLOG, notes=False)
 
 
 # Sort posts
