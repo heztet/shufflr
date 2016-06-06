@@ -80,12 +80,37 @@ def retrieve_posts(client, GET_BLOG, notes=False):
 			print('Stepping... (on post %d)' % offset_int)
 	return posts
 
-def get_post_total(client, GET_POST):
-	
+def get_post_total(client, GET_BLOG):
+	request = client.posts(GET_BLOG)
+	return request['total_posts']
 
 # Sorts an array of posts by number of notes (descending)
 def sort_likes(arr):
 	return sorted(arr, key = lambda post: post['note_count'], reverse=True)
+
+def sort_tiered(arr, total):
+	# Get number of posts per tier
+	top_end = floor(0.2 * total)
+	middle_end = floor(0.3 * total)
+
+	# Sort by likes descending first
+	arr = sort_likes(arr)
+
+	# Split into tiers
+	top = arr[0:top_end]
+	middle = arr[(top_end+1):middle_end]
+	bottom = arr[(middle_end+1)::]
+
+	tiers = [top, middle, bottom]
+
+	# Shuffle tiers and recombine
+	posts = []
+	for tier in tiers:
+		random.shuffle(tier)
+		for post in tier:
+			posts.append(post)
+
+	return posts
 
 # Authenticate via OAuth
 client = pytumblr.TumblrRestClient(
@@ -146,6 +171,8 @@ print('Posting to blog...')
 if posts == [] or posts is None:
 	print('There was nothing to post!')
 else:
+	remaining = len(posts)
 	for post in posts[::-1]: # Reverses post order so that most desired posts are at the top
 		client.reblog(POST_BLOG, id=post['id'], reblog_key=post['reblog_key'])
-		# print('Posted (id: %s)' % post['id'])
+		remaining -= 1
+		print('Posted. %d remaining' % remaining)
